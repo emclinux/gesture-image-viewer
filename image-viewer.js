@@ -330,6 +330,13 @@ function setupIpcHandlers() {
         if (setupWindow) setupWindow.close();
         app.quit();
     });
+
+    ipcMain.on('resize-setup', (event, { height }) => {
+        if (!setupWindow || !height) return;
+        const [width] = setupWindow.getSize();
+        const clampedHeight = Math.min(Math.max(600, Math.round(height)), 1200);
+        setupWindow.setSize(width, clampedHeight);
+    });
 }
 
 app.whenReady().then(() => {

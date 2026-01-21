@@ -273,6 +273,7 @@
         const { ipcRenderer } = require('electron');
         let currentSubdirs = [];
         let selectedSubdirs = new Set();
+        let resizeTimer;
         
         // Load saved settings when page loads
         window.addEventListener('DOMContentLoaded', async () => {
@@ -303,6 +304,7 @@
             
             // Update session details
             updateSessionDetails();
+            requestResize();
         });
         
         // Debounced update helper to avoid repeated deep scans
@@ -310,6 +312,17 @@
         const scheduleUpdateSessionDetails = () => {
             clearTimeout(detailsUpdateTimeout);
             detailsUpdateTimeout = setTimeout(updateSessionDetails, 300);
+        };
+
+        const requestResize = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const container = document.querySelector('.container');
+                const height = container ? container.offsetHeight + 80 : null;
+                if (height) {
+                    ipcRenderer.send('resize-setup', { height });
+                }
+            }, 150);
         };
         
         // Add event listeners for real-time updates (debounced)
@@ -320,6 +333,10 @@
         document.getElementById('imageCount').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionLength').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionUnit').addEventListener('change', scheduleUpdateSessionDetails);
+        document.getElementById('sessionMode').addEventListener('change', requestResize);
+        document.getElementById('imageCount').addEventListener('input', requestResize);
+        document.getElementById('sessionLength').addEventListener('input', requestResize);
+        document.getElementById('sessionUnit').addEventListener('change', requestResize);
         
         function formatDuration(totalMinutes) {
             const hours = Math.floor(totalMinutes / 60);
@@ -441,6 +458,7 @@
                             selectedSubdirs.delete(sub.path);
                         }
                         scheduleUpdateSessionDetails();
+                        requestResize();
                     });
                     // default include on load
                     selectedSubdirs.add(sub.path);
@@ -455,6 +473,7 @@
 
                 subdirList.innerHTML = '';
                 subdirList.appendChild(listEl);
+                requestResize();
             } catch (error) {
                 console.error('Error loading subdirectories:', error);
                 subdirList.innerHTML = 'Unable to load subdirectories';
@@ -492,6 +511,8 @@
             } else if (mode === 'time') {
                 sessionLengthGroup.style.display = 'block';
             }
+
+            requestResize();
         }
         
         async function startViewer() {
