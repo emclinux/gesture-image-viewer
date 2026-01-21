@@ -1,0 +1,60 @@
+{
+  "name": "gesture-slideshow",
+  "version": "1.0.0",
+  "description": "Gesture Slideshow - Node.js image viewer with GUI interface",
+  "main": "image-viewer.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "dist": "npm run build"
+  },
+  "keywords": [
+    "image",
+    "viewer",
+    "slideshow",
+    "gui",
+    "gesture"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.4.0"
+  },
+  "dependencies": {
+    "sharp": "^0.33.0"
+  },
+  "build": {
+    "appId": "com.gestureslideshow.app",
+    "productName": "Gesture Slideshow",
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "Gesture Slideshow"
+    },
+    "nsis": {
+      "oneClick": false
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

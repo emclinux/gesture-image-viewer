@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesture Slideshow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .image-container {
+            max-width: 90vw;
+            max-height: 85vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .filename {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .container:hover .filename {
+            opacity: 1;
+        }
+        
+        .loading {
+            color: white;
+            font-size: 18px;
+            text-align: center;
+        }
+        
+        .session-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 40px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            display: none;
+        }
+        
+        .timer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .container:hover .timer {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="instructions">Press ESC to exit</div>
+        <div class="image-container">
+            <div class="loading">Loading images...</div>
+        </div>
+        <div class="filename"></div>
+        <div class="timer">0:00</div>
+        <div class="session-complete">Session Complete!</div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let countdownInterval;
+        let timeRemaining = 0;
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function startCountdown(durationMs) {
+            // Clear any existing countdown
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            timeRemaining = Math.ceil(durationMs / 1000);
+            updateTimerDisplay();
+            
+            countdownInterval = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+        
+        function updateTimerDisplay() {
+            const timerElement = document.querySelector('.timer');
+            timerElement.textContent = formatTime(timeRemaining);
+        }
+        
+        ipcRenderer.on('session-complete', () => {
+            const imageContainer = document.querySelector('.image-container');
+            const sessionComplete = document.querySelector('.session-complete');
+            
+            // Hide image and show session complete message
+            imageContainer.style.display = 'none';
+            sessionComplete.style.display = 'block';
+            
+            // Clear timer
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+        });
+        
+        ipcRenderer.on('display-image', (event, { src, fileName, duration }) => {
+            const imageContainer = document.querySelector('.image-container');
+            const filenameElement = document.querySelector('.filename');
+            const sessionComplete = document.querySelector('.session-complete');
+            
+            // Hide session complete message and show image
+            sessionComplete.style.display = 'none';
+            imageContainer.style.display = 'flex';
+            
+            // Create new image element
+            const img = document.createElement('img');
+            img.src = src;
+            
+            // Clear container and add new image
+            imageContainer.innerHTML = '';
+            imageContainer.appendChild(img);
+            
+            // Update filename
+            filenameElement.textContent = fileName;
+            
+            // Start countdown timer
+            if (duration) {
+                startCountdown(duration);
+            }
+        });
+    </script>
+</body>
+</html>

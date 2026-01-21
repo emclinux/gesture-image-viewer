@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesture Slideshow Setup</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 420px;
+            max-height: 820px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 10px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .duration-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .button-group button {
+            flex: 1;
+        }
+        
+        .cancel-btn {
+            background: #6c757d;
+        }
+        
+        .cancel-btn:hover {
+            background: #5a6268;
+        }
+        
+        .session-details {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f0f8ff;
+            border: 1px solid #d0e8ff;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+        }
+
+        .tab-content {
+            display: block;
+        }
+
+        .tab-content.hidden {
+            display: none;
+        }
+
+        .subdir-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .subdir-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .session-details strong {
+            color: #0066cc;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gesture Slideshow</h1>
+
+        <div class="tabs">
+            <button id="tabBasic" class="tab-button active" onclick="showTab('basic')">Basic</button>
+            <button id="tabAdvanced" class="tab-button" onclick="showTab('advanced')">Advanced</button>
+        </div>
+
+        <div class="form-group">
+            <label for="directory">Image Directory:</label>
+            <div class="input-group">
+                <input type="text" id="directory" placeholder="Select a directory..." readonly>
+                <button onclick="browseDirectory()">Browse...</button>
+            </div>
+        </div>
+
+        <div id="advancedTab" class="tab-content hidden">
+            <div class="form-group">
+                <label>Include Subdirectories:</label>
+                <div id="subdirList" class="subdir-list">Select a directory to load subfolders.</div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="sessionMode">Session Mode:</label>
+            <select id="sessionMode" onchange="updateSessionControls()">
+                <option value="infinite">Infinite</option>
+                <option value="count">Number of Images</option>
+                <option value="time">Session Length</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="imageCountGroup" style="display: none;">
+            <label for="imageCount">Number of Images:</label>
+            <input type="number" id="imageCount" value="10" min="1" max="9999">
+        </div>
+        
+        <div class="form-group" id="sessionLengthGroup" style="display: none;">
+            <label for="sessionLength">Session Length:</label>
+            <div class="duration-group">
+                <input type="number" id="sessionLength" value="30" min="1" max="999">
+                <select id="sessionUnit">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="duration">Display Duration:</label>
+            <div class="duration-group">
+                <input type="number" id="duration" value="1" min="1" max="999">
+                <select id="unit">
+                    <option value="seconds">Seconds</option>
+                    <option value="minutes" selected>Minutes</option>
+                    <option value="hours">Hours</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button onclick="startViewer()">Start</button>
+            <button class="cancel-btn" onclick="cancelSetup()">Quit</button>
+        </div>
+        
+        <div class="session-details" id="sessionDetails">
+            <div id="detailsContent">Select a directory to see session details</div>
+        </div>
+        
+        <div class="instructions">
+            Select a directory containing images and set how long each image should be displayed. Images will be shown in random order.
+        </div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        let currentSubdirs = [];
+        let selectedSubdirs = new Set();
+        
+        // Load saved settings when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            const settings = await ipcRenderer.invoke('load-settings');
+            if (settings.directory) {
+                document.getElementById('directory').value = settings.directory;
+                await loadSubdirectories(settings.directory);
+            }
+            if (settings.duration) {
+                document.getElementById('duration').value = settings.duration;
+            }
+            if (settings.unit) {
+                document.getElementById('unit').value = settings.unit;
+            }
+            if (settings.sessionMode) {
+                document.getElementById('sessionMode').value = settings.sessionMode;
+                updateSessionControls();
+                
+                if (settings.sessionMode === 'count' && settings.imageCount) {
+                    document.getElementById('imageCount').value = settings.imageCount;
+                } else if (settings.sessionMode === 'time' && settings.sessionLength) {
+                    document.getElementById('sessionLength').value = settings.sessionLength;
+                    if (settings.sessionUnit) {
+                        document.getElementById('sessionUnit').value = settings.sessionUnit;
+                    }
+                }
+            }
+            
+            // Update session details
+            updateSessionDetails();
+        });
+        
+        // Debounced update helper to avoid repeated deep scans
+        let detailsUpdateTimeout;
+        const scheduleUpdateSessionDetails = () => {
+            clearTimeout(detailsUpdateTimeout);
+            detailsUpdateTimeout = setTimeout(updateSessionDetails, 300);
+        };
+        
+        // Add event listeners for real-time updates (debounced)
+        document.getElementById('directory').addEventListener('change', scheduleUpdateSessionDetails);
+        document.getElementById('duration').addEventListener('input', scheduleUpdateSessionDetails);
+        document.getElementById('unit').addEventListener('change', scheduleUpdateSessionDetails);
+        document.getElementById('sessionMode').addEventListener('change', scheduleUpdateSessionDetails);
+        document.getElementById('imageCount').addEventListener('input', scheduleUpdateSessionDetails);
+        document.getElementById('sessionLength').addEventListener('input', scheduleUpdateSessionDetails);
+        document.getElementById('sessionUnit').addEventListener('change', scheduleUpdateSessionDetails);
+        
+        function formatDuration(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = Math.floor(totalMinutes % 60);
+            
+            if (hours > 0) {
+                if (minutes > 0) {
+                    return `${hours}h ${minutes}m`;
+                } else {
+                    return `${hours}h`;
+                }
+            } else {
+                return `${minutes}m`;
+            }
+        }
+        
+        async function updateSessionDetails() {
+            const directory = document.getElementById('directory').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const unit = document.getElementById('unit').value;
+            const sessionMode = document.getElementById('sessionMode').value;
+            const includeSubdirs = selectedSubdirs.size > 0 ? Array.from(selectedSubdirs) : [];
+            const detailsContent = document.getElementById('detailsContent');
+            
+            if (!directory) {
+                detailsContent.innerHTML = 'Select a directory to see session details';
+                return;
+            }
+            
+            // Get actual image count (respecting include list)
+            let imageCount = 0;
+            try {
+                imageCount = await ipcRenderer.invoke('get-image-count', { directory, includeSubdirs });
+            } catch (error) {
+                console.error('Error getting image count:', error);
+            }
+            
+            let detailsHTML = '';
+            
+            if (sessionMode === 'infinite') {
+                detailsHTML = `<strong>Infinite Session:</strong> Found <strong>${imageCount}</strong> images in directory<br>`;
+                detailsHTML += `Images will run continuously until you exit.`;
+            } else if (sessionMode === 'count') {
+                const count = parseInt(document.getElementById('imageCount').value) || 0;
+                let totalMinutes = 0;
+                
+                if (unit === 'seconds') {
+                    totalMinutes = (count * duration) / 60;
+                } else if (unit === 'minutes') {
+                    totalMinutes = count * duration;
+                } else if (unit === 'hours') {
+                    totalMinutes = count * duration * 60;
+                }
+                
+                const totalHours = totalMinutes / 60;
+                
+                detailsHTML = `<strong>Limited Session:</strong> Will show <strong>${count}</strong> of <strong>${imageCount}</strong> available images<br>`;
+                detailsHTML += `Estimated duration: <strong>${formatDuration(totalMinutes)}</strong>`;
+            } else if (sessionMode === 'time') {
+                const sessionLength = parseInt(document.getElementById('sessionLength').value) || 0;
+                const sessionUnit = document.getElementById('sessionUnit').value;
+                let imagesPerMinute = 0;
+                
+                if (unit === 'seconds') {
+                    imagesPerMinute = 60 / duration;
+                } else if (unit === 'minutes') {
+                    imagesPerMinute = 1 / duration;
+                } else if (unit === 'hours') {
+                    imagesPerMinute = 1 / (duration * 60);
+                }
+                
+                let totalMinutes = sessionLength;
+                if (sessionUnit === 'hours') {
+                    totalMinutes = sessionLength * 60;
+                }
+                
+                const estimatedCount = Math.min(Math.floor(totalMinutes * imagesPerMinute), imageCount);
+                
+                detailsHTML = `<strong>Time Session:</strong> Will run for <strong>${sessionLength}</strong> ${sessionUnit}<br>`;
+                detailsHTML += `Will show up to <strong>${estimatedCount}</strong> of <strong>${imageCount}</strong> available images`;
+            }
+            
+            detailsContent.innerHTML = detailsHTML;
+        }
+        
+        async function browseDirectory() {
+            const directory = await ipcRenderer.invoke('select-directory');
+            if (directory) {
+                document.getElementById('directory').value = directory;
+                await loadSubdirectories(directory);
+                scheduleUpdateSessionDetails();
+            }
+        }
+
+        async function loadSubdirectories(directory) {
+            const subdirList = document.getElementById('subdirList');
+            subdirList.innerHTML = 'Loading...';
+            selectedSubdirs.clear();
+
+            try {
+                const subdirs = await ipcRenderer.invoke('list-subdirectories', directory);
+                currentSubdirs = subdirs;
+                if (subdirs.length === 0) {
+                    subdirList.innerHTML = 'No subdirectories found.';
+                    return;
+                }
+
+                const listEl = document.createElement('div');
+                subdirs.forEach(sub => {
+                    const item = document.createElement('label');
+                    item.className = 'subdir-item';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedSubdirs.add(sub.path);
+                        } else {
+                            selectedSubdirs.delete(sub.path);
+                        }
+                        scheduleUpdateSessionDetails();
+                    });
+                    // default include on load
+                    selectedSubdirs.add(sub.path);
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = sub.name;
+
+                    item.appendChild(checkbox);
+                    item.appendChild(nameSpan);
+                    listEl.appendChild(item);
+                });
+
+                subdirList.innerHTML = '';
+                subdirList.appendChild(listEl);
+            } catch (error) {
+                console.error('Error loading subdirectories:', error);
+                subdirList.innerHTML = 'Unable to load subdirectories';
+            }
+        }
+
+        function showTab(tab) {
+            const advancedTab = document.getElementById('advancedTab');
+            const tabBasic = document.getElementById('tabBasic');
+            const tabAdvanced = document.getElementById('tabAdvanced');
+
+            if (tab === 'basic') {
+                tabBasic.classList.add('active');
+                tabAdvanced.classList.remove('active');
+                advancedTab.classList.add('hidden');
+            } else {
+                tabBasic.classList.remove('active');
+                tabAdvanced.classList.add('active');
+                advancedTab.classList.remove('hidden');
+            }
+        }
+        
+        function updateSessionControls() {
+            const mode = document.getElementById('sessionMode').value;
+            const imageCountGroup = document.getElementById('imageCountGroup');
+            const sessionLengthGroup = document.getElementById('sessionLengthGroup');
+            
+            // Hide all session-specific controls
+            imageCountGroup.style.display = 'none';
+            sessionLengthGroup.style.display = 'none';
+            
+            // Show relevant controls based on mode
+            if (mode === 'count') {
+                imageCountGroup.style.display = 'block';
+            } else if (mode === 'time') {
+                sessionLengthGroup.style.display = 'block';
+            }
+        }
+        
+        async function startViewer() {
+            const directory = document.getElementById('directory').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const unit = document.getElementById('unit').value;
+            const sessionMode = document.getElementById('sessionMode').value;
+            
+            let sessionSettings = {
+                mode: sessionMode
+            };
+            
+            if (sessionMode === 'count') {
+                sessionSettings.count = parseInt(document.getElementById('imageCount').value);
+            } else if (sessionMode === 'time') {
+                sessionSettings.length = parseInt(document.getElementById('sessionLength').value);
+                sessionSettings.unit = document.getElementById('sessionUnit').value;
+            }
+            
+            if (!directory) {
+                alert('Please select a directory.');
+                return;
+            }
+            
+            if (isNaN(duration) || duration < 1) {
+                alert('Please enter a valid duration.');
+                return;
+            }
+            
+            const result = await ipcRenderer.invoke('start-viewer', {
+                directory,
+                duration,
+                unit,
+                session: sessionSettings,
+                includeSubdirs
+            });
+            
+            if (!result.success) {
+                alert(result.message);
+            }
+        }
+        
+        function cancelSetup() {
+            ipcRenderer.invoke('cancel-setup');
+        }
+    </script>
+</body>
+</html>
