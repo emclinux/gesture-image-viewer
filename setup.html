@@ -130,55 +130,6 @@
             color: #333;
         }
 
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 10px;
-            background: #e9ecef;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #444;
-        }
-
-        .tab-button.active {
-            background: #667eea;
-            color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
-        }
-
-        .tab-content {
-            display: block;
-        }
-
-        .tab-content.hidden {
-            display: none;
-        }
-
-        .subdir-list {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 10px;
-            background: #f8fafc;
-        }
-
-        .subdir-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 0;
-            font-size: 13px;
-            color: #333;
-        }
-        
         .session-details strong {
             color: #0066cc;
         }
@@ -197,24 +148,11 @@
 <body>
     <div class="container">
         <h1>Gesture Slideshow</h1>
-
-        <div class="tabs">
-            <button id="tabBasic" class="tab-button active" onclick="showTab('basic')">Basic</button>
-            <button id="tabAdvanced" class="tab-button" onclick="showTab('advanced')">Advanced</button>
-        </div>
-
         <div class="form-group">
             <label for="directory">Image Directory:</label>
             <div class="input-group">
                 <input type="text" id="directory" placeholder="Select a directory..." readonly>
-                <button onclick="browseDirectory()">Browse...</button>
-            </div>
-        </div>
-
-        <div id="advancedTab" class="tab-content hidden">
-            <div class="form-group">
-                <label>Include Subdirectories:</label>
-                <div id="subdirList" class="subdir-list">Select a directory to load subfolders.</div>
+                <button id="browseButton" type="button">Browse...</button>
             </div>
         </div>
         
@@ -256,7 +194,7 @@
         </div>
         
         <div class="button-group">
-            <button onclick="startViewer()">Start</button>
+            <button id="startButton">Start</button>
             <button class="cancel-btn" onclick="cancelSetup()">Quit</button>
         </div>
         
@@ -271,16 +209,12 @@
     
     <script>
         const { ipcRenderer } = require('electron');
-        let currentSubdirs = [];
-        let selectedSubdirs = new Set();
-        let resizeTimer;
         
         // Load saved settings when page loads
         window.addEventListener('DOMContentLoaded', async () => {
             const settings = await ipcRenderer.invoke('load-settings');
             if (settings.directory) {
                 document.getElementById('directory').value = settings.directory;
-                await loadSubdirectories(settings.directory);
             }
             if (settings.duration) {
                 document.getElementById('duration').value = settings.duration;
@@ -304,7 +238,19 @@
             
             // Update session details
             updateSessionDetails();
-            requestResize();
+
+            // Wire start button after functions are defined
+            const startBtn = document.getElementById('startButton');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => startViewer());
+            }
+
+            const browseBtn = document.getElementById('browseButton');
+            if (browseBtn) {
+                browseBtn.addEventListener('click', () => browseDirectory());
+                // Fallback
+                browseBtn.onclick = () => browseDirectory();
+            }
         });
         
         // Debounced update helper to avoid repeated deep scans
@@ -312,17 +258,6 @@
         const scheduleUpdateSessionDetails = () => {
             clearTimeout(detailsUpdateTimeout);
             detailsUpdateTimeout = setTimeout(updateSessionDetails, 300);
-        };
-
-        const requestResize = () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                const container = document.querySelector('.container');
-                const height = container ? container.offsetHeight + 80 : null;
-                if (height) {
-                    ipcRenderer.send('resize-setup', { height });
-                }
-            }, 150);
         };
         
         // Add event listeners for real-time updates (debounced)
@@ -333,10 +268,6 @@
         document.getElementById('imageCount').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionLength').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionUnit').addEventListener('change', scheduleUpdateSessionDetails);
-        document.getElementById('sessionMode').addEventListener('change', requestResize);
-        document.getElementById('imageCount').addEventListener('input', requestResize);
-        document.getElementById('sessionLength').addEventListener('input', requestResize);
-        document.getElementById('sessionUnit').addEventListener('change', requestResize);
         
         function formatDuration(totalMinutes) {
             const hours = Math.floor(totalMinutes / 60);
@@ -358,7 +289,6 @@
             const duration = parseInt(document.getElementById('duration').value);
             const unit = document.getElementById('unit').value;
             const sessionMode = document.getElementById('sessionMode').value;
-            const includeSubdirs = selectedSubdirs.size > 0 ? Array.from(selectedSubdirs) : [];
             const detailsContent = document.getElementById('detailsContent');
             
             if (!directory) {
@@ -366,10 +296,10 @@
                 return;
             }
             
-            // Get actual image count (respecting include list)
+            // Get actual image count
             let imageCount = 0;
             try {
-                imageCount = await ipcRenderer.invoke('get-image-count', { directory, includeSubdirs });
+                imageCount = await ipcRenderer.invoke('get-image-count', directory);
             } catch (error) {
                 console.error('Error getting image count:', error);
             }
@@ -426,75 +356,13 @@
             const directory = await ipcRenderer.invoke('select-directory');
             if (directory) {
                 document.getElementById('directory').value = directory;
-                await loadSubdirectories(directory);
                 scheduleUpdateSessionDetails();
             }
         }
 
-        async function loadSubdirectories(directory) {
-            const subdirList = document.getElementById('subdirList');
-            subdirList.innerHTML = 'Loading...';
-            selectedSubdirs.clear();
-
-            try {
-                const subdirs = await ipcRenderer.invoke('list-subdirectories', directory);
-                currentSubdirs = subdirs;
-                if (subdirs.length === 0) {
-                    subdirList.innerHTML = 'No subdirectories found.';
-                    return;
-                }
-
-                const listEl = document.createElement('div');
-                subdirs.forEach(sub => {
-                    const item = document.createElement('label');
-                    item.className = 'subdir-item';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.checked = true;
-                    checkbox.addEventListener('change', () => {
-                        if (checkbox.checked) {
-                            selectedSubdirs.add(sub.path);
-                        } else {
-                            selectedSubdirs.delete(sub.path);
-                        }
-                        scheduleUpdateSessionDetails();
-                        requestResize();
-                    });
-                    // default include on load
-                    selectedSubdirs.add(sub.path);
-
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = sub.name;
-
-                    item.appendChild(checkbox);
-                    item.appendChild(nameSpan);
-                    listEl.appendChild(item);
-                });
-
-                subdirList.innerHTML = '';
-                subdirList.appendChild(listEl);
-                requestResize();
-            } catch (error) {
-                console.error('Error loading subdirectories:', error);
-                subdirList.innerHTML = 'Unable to load subdirectories';
-            }
-        }
-
-        function showTab(tab) {
-            const advancedTab = document.getElementById('advancedTab');
-            const tabBasic = document.getElementById('tabBasic');
-            const tabAdvanced = document.getElementById('tabAdvanced');
-
-            if (tab === 'basic') {
-                tabBasic.classList.add('active');
-                tabAdvanced.classList.remove('active');
-                advancedTab.classList.add('hidden');
-            } else {
-                tabBasic.classList.remove('active');
-                tabAdvanced.classList.add('active');
-                advancedTab.classList.remove('hidden');
-            }
-        }
+        // Expose for any inline or external calls
+        window.startViewer = startViewer;
+        window.browseDirectory = browseDirectory;
         
         function updateSessionControls() {
             const mode = document.getElementById('sessionMode').value;
@@ -511,8 +379,6 @@
             } else if (mode === 'time') {
                 sessionLengthGroup.style.display = 'block';
             }
-
-            requestResize();
         }
         
         async function startViewer() {
@@ -546,8 +412,7 @@
                 directory,
                 duration,
                 unit,
-                session: sessionSettings,
-                includeSubdirs
+                session: sessionSettings
             });
             
             if (!result.success) {

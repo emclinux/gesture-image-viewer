@@ -69,7 +69,8 @@ function createViewerWindow() {
         title: 'Gesture Slideshow',
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
+            webSecurity: false
         },
         fullscreen: true,
         backgroundColor: '#000000'
@@ -94,7 +95,7 @@ function createViewerWindow() {
     });
 }
 
-async function findImageFiles(directory, allowedSubdirs) {
+async function findImageFiles(directory) {
     try {
         const files = [];
         const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -102,10 +103,7 @@ async function findImageFiles(directory, allowedSubdirs) {
         for (const entry of entries) {
             const fullPath = path.join(directory, entry.name);
             if (entry.isDirectory()) {
-                const allowed = !allowedSubdirs || allowedSubdirs.has(fullPath);
-                if (allowed) {
-                    files.push(...await findImageFiles(fullPath, allowedSubdirs));
-                }
+                files.push(...await findImageFiles(fullPath));
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name).toLowerCase();
                 if (IMAGE_EXTENSIONS.includes(ext)) files.push(fullPath);
@@ -127,10 +125,8 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-function getImageCountCacheKey(directory, allowedSubdirs) {
-    if (!allowedSubdirs || allowedSubdirs.size === 0) return directory;
-    const sorted = [...allowedSubdirs].sort();
-    return `${directory}|${sorted.join(';')}`;
+function getImageCountCacheKey(directory) {
+    return directory;
 }
 
 function showImage(index) {
@@ -153,7 +149,10 @@ function startAutoAdvanceTimer() {
 
 async function displayNextImage() {
     if (imageFiles.length === 0) return;
-    
+    if (!viewerWindow) return;
+
+    console.log('Image list:', imageFiles);
+
     // Check session limits
     if (sessionSettings.mode === 'count' && imagesShown >= sessionSettings.count) {
         console.log('Session completed: Maximum image count reached');
@@ -173,6 +172,12 @@ async function displayNextImage() {
     }
     
     try {
+        console.log('DisplayNextImage:', {
+            length: imageFiles.length,
+            index: currentImageIndex,
+            path: imageFiles[currentImageIndex]
+        });
+
         showImage(currentImageIndex);
         currentImageIndex++;
         imagesShown++;
@@ -237,36 +242,18 @@ function setupIpcHandlers() {
         return await loadSettings();
     });
 
-    ipcMain.handle('get-image-count', async (event, { directory, includeSubdirs }) => {
-        const allowedSubdirs = new Set(includeSubdirs || []);
-        allowedSubdirs.add(directory);
-
-        const cacheKey = getImageCountCacheKey(directory, allowedSubdirs);
+    ipcMain.handle('get-image-count', async (event, directory) => {
+        const cacheKey = getImageCountCacheKey(directory);
         if (imageCountCache.has(cacheKey)) {
             return imageCountCache.get(cacheKey);
         }
 
-        const files = await findImageFiles(directory, allowedSubdirs);
+        const files = await findImageFiles(directory);
         imageCountCache.set(cacheKey, files.length);
         return files.length;
     });
 
-    ipcMain.handle('list-subdirectories', async (event, directory) => {
-        try {
-            const entries = await fs.readdir(directory, { withFileTypes: true });
-            return entries
-                .filter(entry => entry.isDirectory())
-                .map(entry => ({
-                    name: entry.name,
-                    path: path.join(directory, entry.name)
-                }));
-        } catch (error) {
-            console.error('Error listing subdirectories:', error);
-            return [];
-        }
-    });
-
-    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session, includeSubdirs }) => {
+    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session }) => {
         // Save current settings
         await saveSettings({ 
             directory, 
@@ -294,11 +281,8 @@ function setupIpcHandlers() {
         }
         
         console.log(`Searching for images in: ${directory}`);
-        const allowedSubdirs = new Set(includeSubdirs || []);
-        allowedSubdirs.add(directory);
-
-        const cacheKey = getImageCountCacheKey(directory, allowedSubdirs);
-        imageFiles = await findImageFiles(directory, allowedSubdirs);
+        const cacheKey = getImageCountCacheKey(directory);
+        imageFiles = await findImageFiles(directory);
         imageCountCache.set(cacheKey, imageFiles.length);
         
         if (imageFiles.length === 0) {

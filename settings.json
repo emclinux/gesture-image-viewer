@@ -1,6 +1,6 @@
 {
   "directory": "/Volumes/backup/Art/REFS",
-  "duration": 1,
+  "duration": 30,
   "unit": "seconds",
   "sessionMode": "count",
   "imageCount": 10,
