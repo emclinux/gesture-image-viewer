@@ -102,11 +102,32 @@
         .container:hover .timer {
             opacity: 1;
         }
+        
+        .pause-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            background: rgba(255, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            display: none;
+            z-index: 10;
+        }
+        
+        .pause-indicator.visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="instructions">Press ESC to exit</div>
+        <div class="instructions">Press ESC to exit • SPACE to pause/resume • Arrow keys to navigate</div>
+        <div class="pause-indicator">PAUSED</div>
         <div class="image-container">
             <div class="loading">Loading images...</div>
         </div>
@@ -162,6 +183,20 @@
             // Clear timer
             if (countdownInterval) {
                 clearInterval(countdownInterval);
+            }
+        });
+        
+        ipcRenderer.on('pause-state', (event, { paused }) => {
+            const pauseIndicator = document.querySelector('.pause-indicator');
+            if (paused) {
+                pauseIndicator.classList.add('visible');
+                // Clear countdown when paused
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            } else {
+                pauseIndicator.classList.remove('visible');
+                // Restart countdown when resumed (will be triggered by next image display)
             }
         });
         

@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const { pathToFileURL } = require('url');
-const sharp = require('sharp');
 
 let setupWindow;
 let viewerWindow;
@@ -14,6 +13,7 @@ let sessionSettings = { mode: 'infinite' };
 let imagesShown = 0;
 let sessionStartTime;
 let sessionEndTime;
+let isPaused = false;
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp'];
 const CONFIG_FILE = path.join(__dirname, 'settings.json');
@@ -32,7 +32,8 @@ async function loadSettings() {
             sessionMode: 'infinite',
             imageCount: 10,
             sessionLength: 30,
-            sessionUnit: 'minutes'
+            sessionUnit: 'minutes',
+            fullscreen: true
         };
     }
 }
@@ -49,20 +50,20 @@ async function saveSettings(settings) {
 function createSetupWindow() {
     setupWindow = new BrowserWindow({
         width: 480,
-        height: 820,
+        height: 900,
         title: 'Gesture Slideshow Setup',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
         },
-        resizable: false
+        resizable: true
     });
 
     setupWindow.loadFile('setup.html');
     setupWindow.on('closed', () => { setupWindow = null; });
 }
 
-function createViewerWindow() {
+function createViewerWindow(fullscreen = true) {
     viewerWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -72,7 +73,7 @@ function createViewerWindow() {
             contextIsolation: false,
             webSecurity: false
         },
-        fullscreen: true,
+        fullscreen: fullscreen,
         backgroundColor: '#000000'
     });
 
@@ -91,6 +92,9 @@ function createViewerWindow() {
         } else if (input.key === 'ArrowLeft') {
             event.preventDefault();
             showPreviousImage();
+        } else if (input.key === ' ') {
+            event.preventDefault();
+            togglePause();
         }
     });
 }
@@ -99,6 +103,7 @@ async function findImageFiles(directory) {
     try {
         const files = [];
         const entries = await fs.readdir(directory, { withFileTypes: true });
+        console.log(`Scanning: ${directory}`);
         
         for (const entry of entries) {
             const fullPath = path.join(directory, entry.name);
@@ -106,9 +111,12 @@ async function findImageFiles(directory) {
                 files.push(...await findImageFiles(fullPath));
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name).toLowerCase();
-                if (IMAGE_EXTENSIONS.includes(ext)) files.push(fullPath);
+                if (IMAGE_EXTENSIONS.includes(ext)) {
+                    files.push(fullPath);
+                }
             }
         }
+        console.log(`Found ${files.length} images in ${directory}`);
         return files;
     } catch (error) {
         console.error('Error reading directory:', error);
@@ -145,6 +153,27 @@ function showImage(index) {
 function startAutoAdvanceTimer() {
     if (displayInterval) clearInterval(displayInterval);
     displayInterval = setInterval(displayNextImage, displayDuration);
+}
+
+function togglePause() {
+    isPaused = !isPaused;
+    
+    if (isPaused) {
+        // Clear the timer to pause
+        if (displayInterval) {
+            clearInterval(displayInterval);
+            displayInterval = null;
+        }
+        console.log('Slideshow paused');
+        // Send pause state to viewer
+        viewerWindow.webContents.send('pause-state', { paused: true });
+    } else {
+        // Restart the timer to resume
+        startAutoAdvanceTimer();
+        console.log('Slideshow resumed');
+        // Send resume state to viewer
+        viewerWindow.webContents.send('pause-state', { paused: false });
+    }
 }
 
 async function displayNextImage() {
@@ -253,7 +282,22 @@ function setupIpcHandlers() {
         return files.length;
     });
 
-    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session }) => {
+    ipcMain.handle('list-subdirectories', async (event, directory) => {
+        try {
+            const entries = await fs.readdir(directory, { withFileTypes: true });
+            return entries
+                .filter(entry => entry.isDirectory())
+                .map(entry => ({
+                    name: entry.name,
+                    path: path.join(directory, entry.name)
+                }));
+        } catch (error) {
+            console.error('Error listing subdirectories:', error);
+            return [];
+        }
+    });
+
+    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session, includeSubdirs }) => {
         // Save current settings
         await saveSettings({ 
             directory, 
@@ -262,7 +306,8 @@ function setupIpcHandlers() {
             sessionMode: session.mode,
             imageCount: session.count || 10,
             sessionLength: session.length || 30,
-            sessionUnit: session.unit || 'minutes'
+            sessionUnit: session.unit || 'minutes',
+            fullscreen
         });
         
         displayDuration = unit === 'seconds' ? duration * 1000 : 
@@ -281,8 +326,11 @@ function setupIpcHandlers() {
         }
         
         console.log(`Searching for images in: ${directory}`);
-        const cacheKey = getImageCountCacheKey(directory);
-        imageFiles = await findImageFiles(directory);
+        const allowedSubdirs = new Set(includeSubdirs || []);
+        allowedSubdirs.add(directory);
+
+        const cacheKey = getImageCountCacheKey(directory, allowedSubdirs);
+        imageFiles = await findImageFiles(directory, allowedSubdirs);
         imageCountCache.set(cacheKey, imageFiles.length);
         
         if (imageFiles.length === 0) {
@@ -300,7 +348,7 @@ function setupIpcHandlers() {
         imageFiles = shuffleArray(imageFiles);
         
         setupWindow.close();
-        createViewerWindow();
+        createViewerWindow(fullscreen);
         
         setTimeout(() => {
             displayNextImage();

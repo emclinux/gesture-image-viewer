@@ -9,7 +9,7 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             height: 100vh;
             display: flex;
             align-items: center;
@@ -18,17 +18,17 @@
         }
         
         .container {
-            background: white;
+            background: #2d2d2d;
             border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 420px;
             max-height: 820px;
         }
         
         h1 {
-            color: #333;
+            color: #ffffff;
             margin-bottom: 25px;
             text-align: center;
             font-size: 24px;
@@ -40,96 +40,166 @@
         
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+        
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #3a3a3a;
+            color: #ffffff;
+        }
+        
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         .input-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         
-        input[type="text"] {
+        .input-group input {
             flex: 1;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        button {
-            padding: 10px 16px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background: #5a67d8;
         }
         
         .duration-group {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 8px;
         }
         
-        input[type="number"] {
-            width: 80px;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+        .duration-group input {
+            flex: 1;
         }
         
-        select {
-            padding: 10px;
-            border: 2px solid #ddd;
+        .duration-group select {
+            width: 120px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
             border-radius: 6px;
             font-size: 14px;
-            background: white;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        #startButton {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        #startButton:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+        }
+        
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+            flex: 1;
+        }
+        
+        .cancel-btn:hover {
+            background: #c0392b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.35);
         }
         
         .button-group {
             display: flex;
-            gap: 10px;
-            margin-top: 25px;
-        }
-        
-        .button-group button {
-            flex: 1;
-        }
-        
-        .cancel-btn {
-            background: #6c757d;
-        }
-        
-        .cancel-btn:hover {
-            background: #5a6268;
+            gap: 12px;
+            margin-top: 24px;
         }
         
         .session-details {
-            margin-top: 15px;
-            padding: 12px;
-            background: #f0f8ff;
-            border: 1px solid #d0e8ff;
+            background: #3a3a3a;
             border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            border: 1px solid #444;
+        }
+        
+        .session-details h3 {
+            margin: 0 0 12px 0;
+            color: #ffffff;
+            font-size: 16px;
+        }
+        
+        .session-details p {
+            margin: 6px 0;
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+        
+        .session-details strong {
+            color: #667eea;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+        }
+
+        .tab-content {
+            display: block;
+        }
+
+        .tab-content.hidden {
+            display: none;
+        }
+
+        .subdir-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: #f8fafc;
+        }
+
+        .subdir-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
             font-size: 13px;
             color: #333;
         }
-
+        
         .session-details strong {
             color: #0066cc;
         }
@@ -148,63 +218,89 @@
 <body>
     <div class="container">
         <h1>Gesture Slideshow</h1>
-        <div class="form-group">
-            <label for="directory">Image Directory:</label>
-            <div class="input-group">
-                <input type="text" id="directory" placeholder="Select a directory..." readonly>
-                <button id="browseButton" type="button">Browse...</button>
+
+        <div class="tabs">
+            <button id="tabBasic" class="tab-button active" onclick="showTab('basic')">Basic</button>
+            <button id="tabAdvanced" class="tab-button" onclick="showTab('advanced')">Advanced</button>
+        </div>
+
+        <div id="basicTab" class="tab-content active">
+            <div class="form-group">
+                <label for="directory">Image Directory:</label>
+                <div class="input-group">
+                    <input type="text" id="directory" placeholder="Select a directory..." readonly>
+                    <button id="browseButton" type="button" onclick="browseDirectory()">Browse...</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="form-group">
-            <label for="sessionMode">Session Mode:</label>
-            <select id="sessionMode" onchange="updateSessionControls()">
-                <option value="infinite">Infinite</option>
-                <option value="count">Number of Images</option>
-                <option value="time">Session Length</option>
-            </select>
-        </div>
-        
-        <div class="form-group" id="imageCountGroup" style="display: none;">
-            <label for="imageCount">Number of Images:</label>
-            <input type="number" id="imageCount" value="10" min="1" max="9999">
-        </div>
-        
-        <div class="form-group" id="sessionLengthGroup" style="display: none;">
-            <label for="sessionLength">Session Length:</label>
-            <div class="duration-group">
-                <input type="number" id="sessionLength" value="30" min="1" max="999">
-                <select id="sessionUnit">
-                    <option value="minutes">Minutes</option>
-                    <option value="hours">Hours</option>
+
+            <div class="form-group" id="subdirGroup" style="display: none;">
+                <label>Include Subdirectories:</label>
+                <div class="subdir-controls">
+                    <button type="button" onclick="toggleSubdirs(true)">Select All</button>
+                    <button type="button" onclick="toggleSubdirs(false)">Select None</button>
+                </div>
+                <div id="subdirList" class="subdir-list">Select a directory to load subfolders.</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="sessionMode">Session Mode:</label>
+                <select id="sessionMode" onchange="updateSessionControls()">
+                    <option value="infinite">Infinite</option>
+                    <option value="count">Number of Images</option>
+                    <option value="time">Session Length</option>
                 </select>
             </div>
-        </div>
-        
-        <div class="form-group">
-            <label for="duration">Display Duration:</label>
-            <div class="duration-group">
-                <input type="number" id="duration" value="1" min="1" max="999">
-                <select id="unit">
-                    <option value="seconds">Seconds</option>
-                    <option value="minutes" selected>Minutes</option>
-                    <option value="hours">Hours</option>
-                </select>
+            
+            <div class="form-group" id="imageCountGroup" style="display: none;">
+                <label for="imageCount">Number of Images:</label>
+                <input type="number" id="imageCount" value="10" min="1" max="9999">
             </div>
-        </div>
-        
-        <div class="button-group">
-            <button id="startButton">Start</button>
-            <button class="cancel-btn" onclick="cancelSetup()">Quit</button>
-        </div>
-        
-        <div class="session-details" id="sessionDetails">
-            <div id="detailsContent">Select a directory to see session details</div>
-        </div>
-        
-        <div class="instructions">
-            Select a directory containing images and set how long each image should be displayed. Images will be shown in random order.
-        </div>
+            
+            <div class="form-group" id="sessionLengthGroup" style="display: none;">
+                <label for="sessionLength">Session Length:</label>
+                <div class="duration-group">
+                    <input type="number" id="sessionLength" value="30" min="1" max="999">
+                    <select id="sessionUnit">
+                        <option value="minutes">Minutes</option>
+                        <option value="hours">Hours</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Display Duration:</label>
+                <div class="duration-group">
+                    <input type="number" id="duration" value="1" min="1" max="999">
+                    <select id="unit">
+                        <option value="seconds">Seconds</option>
+                        <option value="minutes" selected>Minutes</option>
+                        <option value="hours">Hours</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="fullscreen" checked> Start Fullscreen
+                </label>
+            </div>
+            
+            <div class="button-group">
+                <button id="startButton" onclick="startViewer()">Start</button>
+                <button class="cancel-btn" onclick="cancelSetup()">Quit</button>
+            </div>
+            
+            <div class="session-details" id="sessionDetails">
+                <div id="detailsContent">Select a directory to see session details</div>
+            </div>
+            
+            <div class="instructions">
+                Select a directory containing images and set how long each image should be displayed. Images will be shown in random order.
+            </div>
+        </div> <!-- end basic tab -->
+
+        <div id="advancedTab" class="tab-content hidden">
+        </div> <!-- end advanced tab -->
     </div>
     
     <script>
@@ -235,22 +331,12 @@
                     }
                 }
             }
+            if (settings.fullscreen !== undefined) {
+                document.getElementById('fullscreen').checked = settings.fullscreen;
+            }
             
-            // Update session details
             updateSessionDetails();
-
-            // Wire start button after functions are defined
-            const startBtn = document.getElementById('startButton');
-            if (startBtn) {
-                startBtn.addEventListener('click', () => startViewer());
-            }
-
-            const browseBtn = document.getElementById('browseButton');
-            if (browseBtn) {
-                browseBtn.addEventListener('click', () => browseDirectory());
-                // Fallback
-                browseBtn.onclick = () => browseDirectory();
-            }
+            requestResize();
         });
         
         // Debounced update helper to avoid repeated deep scans
@@ -258,6 +344,17 @@
         const scheduleUpdateSessionDetails = () => {
             clearTimeout(detailsUpdateTimeout);
             detailsUpdateTimeout = setTimeout(updateSessionDetails, 300);
+        };
+
+        const requestResize = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const container = document.querySelector('.container');
+                const height = container ? container.offsetHeight + 80 : null;
+                if (height) {
+                    ipcRenderer.send('resize-setup', { height });
+                }
+            }, 150);
         };
         
         // Add event listeners for real-time updates (debounced)
@@ -268,6 +365,10 @@
         document.getElementById('imageCount').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionLength').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionUnit').addEventListener('change', scheduleUpdateSessionDetails);
+        document.getElementById('sessionMode').addEventListener('change', requestResize);
+        document.getElementById('imageCount').addEventListener('input', requestResize);
+        document.getElementById('sessionLength').addEventListener('input', requestResize);
+        document.getElementById('sessionUnit').addEventListener('change', requestResize);
         
         function formatDuration(totalMinutes) {
             const hours = Math.floor(totalMinutes / 60);
@@ -360,9 +461,70 @@
             }
         }
 
-        // Expose for any inline or external calls
-        window.startViewer = startViewer;
-        window.browseDirectory = browseDirectory;
+        async function loadSubdirectories(directory) {
+            const subdirList = document.getElementById('subdirList');
+            subdirList.innerHTML = 'Loading...';
+            selectedSubdirs.clear();
+
+            try {
+                const subdirs = await ipcRenderer.invoke('list-subdirectories', directory);
+                currentSubdirs = subdirs;
+                if (subdirs.length === 0) {
+                    subdirList.innerHTML = 'No subdirectories found.';
+                    return;
+                }
+
+                const listEl = document.createElement('div');
+                subdirs.forEach(sub => {
+                    const item = document.createElement('label');
+                    item.className = 'subdir-item';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = true;
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedSubdirs.add(sub.path);
+                        } else {
+                            selectedSubdirs.delete(sub.path);
+                        }
+                        scheduleUpdateSessionDetails();
+                        requestResize();
+                    });
+                    // default include on load
+                    selectedSubdirs.add(sub.path);
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = sub.name;
+
+                    item.appendChild(checkbox);
+                    item.appendChild(nameSpan);
+                    listEl.appendChild(item);
+                });
+
+                subdirList.innerHTML = '';
+                subdirList.appendChild(listEl);
+                requestResize();
+            } catch (error) {
+                console.error('Error loading subdirectories:', error);
+                subdirList.innerHTML = 'Unable to load subdirectories';
+            }
+        }
+
+        function showTab(tab) {
+            const advancedTab = document.getElementById('advancedTab');
+            const tabBasic = document.getElementById('tabBasic');
+            const tabAdvanced = document.getElementById('tabAdvanced');
+
+            if (tab === 'basic') {
+                tabBasic.classList.add('active');
+                tabAdvanced.classList.remove('active');
+                advancedTab.classList.add('hidden');
+            } else {
+                tabBasic.classList.remove('active');
+                tabAdvanced.classList.add('active');
+                advancedTab.classList.remove('hidden');
+            }
+        }
         
         function updateSessionControls() {
             const mode = document.getElementById('sessionMode').value;
@@ -408,11 +570,15 @@
                 return;
             }
             
+            const includeSubdirs = selectedSubdirs.size > 0 ? Array.from(selectedSubdirs) : [];
+            const fullscreen = document.getElementById('fullscreen').checked;
+            
             const result = await ipcRenderer.invoke('start-viewer', {
                 directory,
                 duration,
                 unit,
-                session: sessionSettings
+                session: sessionSettings,
+                includeSubdirs
             });
             
             if (!result.success) {

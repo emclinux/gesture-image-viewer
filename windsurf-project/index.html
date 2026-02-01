@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Countdown Timer</h1>
+        
+        <div class="timer-setup">
+            <div class="timer-section" id="timer1Section">
+                <div class="timer-header">
+                    <h3 class="timer-name" id="timer1Name">Timer 1</h3>
+                    <button class="edit-timer-btn" onclick="timerInstance.editTimerName(1)" title="Edit timer name">✏️</button>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="timer1Minutes" min="0" max="59" value="0" placeholder="Minutes" class="large-input">
+                    <span class="separator">:</span>
+                    <input type="number" id="timer1Seconds" min="0" max="59" value="30" placeholder="Seconds" class="large-input">
+                </div>
+            </div>
+            
+            <div id="additionalTimers"></div>
+            
+            <div class="add-timer-container">
+                <button id="addTimerBtn" class="btn btn-add">+ Add Timer</button>
+            </div>
+        </div>
+        
+        <div class="flip-container">
+            <div class="flipper" id="flipper">
+                <div class="front">
+                    <div class="timer-display">
+                        <div class="current-timer-label" id="currentTimerLabel">Timer 1</div>
+                        <div class="hourglass-container">
+                            <div class="hourglass">
+                                <div class="hourglass-top">
+                                    <div class="sand-top" id="sandTop"></div>
+                                </div>
+                                <div class="hourglass-middle">
+                                    <div class="hourglass-neck"></div>
+                                </div>
+                                <div class="hourglass-bottom">
+                                    <div class="sand-bottom" id="sandBottom"></div>
+                                </div>
+                                <div class="hourglass-frame"></div>
+                            </div>
+                            <div class="time-text" id="timeDisplay">00:05:00</div>
+                            <div class="milliseconds-text" id="millisecondsDisplay">.000</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="back">
+                    <div class="timer-setup-back">
+                        <h2>Timer Running</h2>
+                        <div class="current-timer-label-back" id="currentTimerLabelBack">Timer 1</div>
+                        <div class="time-display-back">
+                            <div class="time-text-back" id="timeDisplayBack">00:05:00</div>
+                            <div class="milliseconds-text-back" id="millisecondsDisplayBack">.000</div>
+                        </div>
+                        <div class="timer-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">100%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">Start</button>
+            <button id="pauseBtn" class="btn btn-secondary" disabled>Pause</button>
+            <button id="resetBtn" class="btn btn-danger">Reset</button>
+        </div>
+        
+        <div class="notification" id="notification" style="display: none;">
+            <span id="notificationText"></span>
+        </div>
+        
+        <div class="screen-flash" id="screenFlash"></div>
+        <div class="pulse-ring" id="pulseRing"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

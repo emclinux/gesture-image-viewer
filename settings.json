@@ -2,8 +2,9 @@
   "directory": "/Volumes/backup/Art/REFS",
   "duration": 30,
   "unit": "seconds",
-  "sessionMode": "count",
+  "sessionMode": "infinite",
   "imageCount": 10,
   "sessionLength": 30,
-  "sessionUnit": "minutes"
+  "sessionUnit": "minutes",
+  "fullscreen": true
 }
