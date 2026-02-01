@@ -70,8 +70,7 @@ function createViewerWindow(fullscreen = true) {
         title: 'Gesture Slideshow',
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false,
-            webSecurity: false
+            contextIsolation: false
         },
         fullscreen: fullscreen,
         backgroundColor: '#000000'
@@ -99,7 +98,7 @@ function createViewerWindow(fullscreen = true) {
     });
 }
 
-async function findImageFiles(directory) {
+async function findImageFiles(directory, allowedSubdirs) {
     try {
         const files = [];
         const entries = await fs.readdir(directory, { withFileTypes: true });
@@ -108,7 +107,10 @@ async function findImageFiles(directory) {
         for (const entry of entries) {
             const fullPath = path.join(directory, entry.name);
             if (entry.isDirectory()) {
-                files.push(...await findImageFiles(fullPath));
+                const allowed = !allowedSubdirs || allowedSubdirs.has(fullPath);
+                if (allowed) {
+                    files.push(...await findImageFiles(fullPath, allowedSubdirs));
+                }
             } else if (entry.isFile()) {
                 const ext = path.extname(entry.name).toLowerCase();
                 if (IMAGE_EXTENSIONS.includes(ext)) {
@@ -133,8 +135,10 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-function getImageCountCacheKey(directory) {
-    return directory;
+function getImageCountCacheKey(directory, allowedSubdirs) {
+    if (!allowedSubdirs || allowedSubdirs.size === 0) return directory;
+    const sorted = [...allowedSubdirs].sort();
+    return `${directory}|${sorted.join(';')}`;
 }
 
 function showImage(index) {
@@ -178,10 +182,7 @@ function togglePause() {
 
 async function displayNextImage() {
     if (imageFiles.length === 0) return;
-    if (!viewerWindow) return;
-
-    console.log('Image list:', imageFiles);
-
+    
     // Check session limits
     if (sessionSettings.mode === 'count' && imagesShown >= sessionSettings.count) {
         console.log('Session completed: Maximum image count reached');
@@ -201,12 +202,6 @@ async function displayNextImage() {
     }
     
     try {
-        console.log('DisplayNextImage:', {
-            length: imageFiles.length,
-            index: currentImageIndex,
-            path: imageFiles[currentImageIndex]
-        });
-
         showImage(currentImageIndex);
         currentImageIndex++;
         imagesShown++;
@@ -271,13 +266,16 @@ function setupIpcHandlers() {
         return await loadSettings();
     });
 
-    ipcMain.handle('get-image-count', async (event, directory) => {
-        const cacheKey = getImageCountCacheKey(directory);
+    ipcMain.handle('get-image-count', async (event, { directory, includeSubdirs }) => {
+        const allowedSubdirs = new Set(includeSubdirs || []);
+        allowedSubdirs.add(directory);
+
+        const cacheKey = getImageCountCacheKey(directory, allowedSubdirs);
         if (imageCountCache.has(cacheKey)) {
             return imageCountCache.get(cacheKey);
         }
 
-        const files = await findImageFiles(directory);
+        const files = await findImageFiles(directory, allowedSubdirs);
         imageCountCache.set(cacheKey, files.length);
         return files.length;
     });
@@ -297,7 +295,14 @@ function setupIpcHandlers() {
         }
     });
 
-    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session, includeSubdirs }) => {
+    ipcMain.handle('resize-setup-window', async (event, { width, height }) => {
+        if (setupWindow) {
+            const [currentWidth] = setupWindow.getSize();
+            setupWindow.setSize(Math.max(width, currentWidth), height, true);
+        }
+    });
+
+    ipcMain.handle('start-viewer', async (event, { directory, duration, unit, session, includeSubdirs, fullscreen }) => {
         // Save current settings
         await saveSettings({ 
             directory, 
@@ -326,8 +331,10 @@ function setupIpcHandlers() {
         }
         
         console.log(`Searching for images in: ${directory}`);
-        const allowedSubdirs = new Set(includeSubdirs || []);
-        allowedSubdirs.add(directory);
+        const allowedSubdirs = includeSubdirs && includeSubdirs.length > 0 ? new Set(includeSubdirs) : null;
+        if (allowedSubdirs) {
+            allowedSubdirs.add(directory);
+        }
 
         const cacheKey = getImageCountCacheKey(directory, allowedSubdirs);
         imageFiles = await findImageFiles(directory, allowedSubdirs);

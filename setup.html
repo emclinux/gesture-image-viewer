@@ -160,17 +160,18 @@
         .tab-button {
             flex: 1;
             padding: 10px;
-            background: #e9ecef;
-            border: none;
+            background: #3a3a3a;
+            border: 1px solid #444;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            color: #444;
+            color: #e0e0e0;
         }
 
         .tab-button.active {
             background: #667eea;
             color: white;
+            border-color: #667eea;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
         }
 
@@ -199,9 +200,16 @@
             font-size: 13px;
             color: #333;
         }
-        
-        .session-details strong {
-            color: #0066cc;
+
+        .subdir-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .subdir-controls button {
+            font-size: 12px;
+            padding: 4px 8px;
         }
         
         .instructions {
@@ -305,12 +313,16 @@
     
     <script>
         const { ipcRenderer } = require('electron');
+        let currentSubdirs = [];
+        let selectedSubdirs = new Set();
+        let resizeTimer;
         
         // Load saved settings when page loads
         window.addEventListener('DOMContentLoaded', async () => {
             const settings = await ipcRenderer.invoke('load-settings');
             if (settings.directory) {
                 document.getElementById('directory').value = settings.directory;
+                await loadSubdirectories(settings.directory);
             }
             if (settings.duration) {
                 document.getElementById('duration').value = settings.duration;
@@ -336,7 +348,6 @@
             }
             
             updateSessionDetails();
-            requestResize();
         });
         
         // Debounced update helper to avoid repeated deep scans
@@ -349,15 +360,26 @@
         const requestResize = () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                const container = document.querySelector('.container');
-                const height = container ? container.offsetHeight + 80 : null;
-                if (height) {
-                    ipcRenderer.send('resize-setup', { height });
-                }
-            }, 150);
+                ipcRenderer.invoke('resize-setup-window', {
+                    width: document.body.scrollWidth,
+                    height: document.body.scrollHeight
+                });
+            }, 100);
         };
+
+        function formatDuration(minutes) {
+            if (minutes < 60) {
+                return `${Math.round(minutes)}m`;
+            }
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = Math.round(minutes % 60);
+            if (remainingMinutes > 0) {
+                return `${hours}h ${remainingMinutes}m`;
+            } else {
+                return `${hours}h`;
+            }
+        }
         
-        // Add event listeners for real-time updates (debounced)
         document.getElementById('directory').addEventListener('change', scheduleUpdateSessionDetails);
         document.getElementById('duration').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('unit').addEventListener('change', scheduleUpdateSessionDetails);
@@ -365,31 +387,13 @@
         document.getElementById('imageCount').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionLength').addEventListener('input', scheduleUpdateSessionDetails);
         document.getElementById('sessionUnit').addEventListener('change', scheduleUpdateSessionDetails);
-        document.getElementById('sessionMode').addEventListener('change', requestResize);
-        document.getElementById('imageCount').addEventListener('input', requestResize);
-        document.getElementById('sessionLength').addEventListener('input', requestResize);
-        document.getElementById('sessionUnit').addEventListener('change', requestResize);
-        
-        function formatDuration(totalMinutes) {
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = Math.floor(totalMinutes % 60);
-            
-            if (hours > 0) {
-                if (minutes > 0) {
-                    return `${hours}h ${minutes}m`;
-                } else {
-                    return `${hours}h`;
-                }
-            } else {
-                return `${minutes}m`;
-            }
-        }
         
         async function updateSessionDetails() {
             const directory = document.getElementById('directory').value;
             const duration = parseInt(document.getElementById('duration').value);
             const unit = document.getElementById('unit').value;
             const sessionMode = document.getElementById('sessionMode').value;
+            const includeSubdirs = selectedSubdirs.size > 0 ? Array.from(selectedSubdirs) : [];
             const detailsContent = document.getElementById('detailsContent');
             
             if (!directory) {
@@ -397,10 +401,10 @@
                 return;
             }
             
-            // Get actual image count
+            // Get actual image count (respecting include list)
             let imageCount = 0;
             try {
-                imageCount = await ipcRenderer.invoke('get-image-count', directory);
+                imageCount = await ipcRenderer.invoke('get-image-count', { directory, includeSubdirs });
             } catch (error) {
                 console.error('Error getting image count:', error);
             }
@@ -457,6 +461,7 @@
             const directory = await ipcRenderer.invoke('select-directory');
             if (directory) {
                 document.getElementById('directory').value = directory;
+                await loadSubdirectories(directory);
                 scheduleUpdateSessionDetails();
             }
         }
@@ -514,16 +519,39 @@
             const advancedTab = document.getElementById('advancedTab');
             const tabBasic = document.getElementById('tabBasic');
             const tabAdvanced = document.getElementById('tabAdvanced');
+            const subdirGroup = document.getElementById('subdirGroup');
 
             if (tab === 'basic') {
                 tabBasic.classList.add('active');
                 tabAdvanced.classList.remove('active');
                 advancedTab.classList.add('hidden');
+                subdirGroup.style.display = 'none';
             } else {
                 tabBasic.classList.remove('active');
                 tabAdvanced.classList.add('active');
                 advancedTab.classList.remove('hidden');
+                subdirGroup.style.display = 'block';
             }
+            requestResize();
+        }
+
+        function toggleSubdirs(selectAll) {
+            const checkboxes = document.querySelectorAll('#subdirList input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll;
+                const label = cb.closest('.subdir-item');
+                if (label) {
+                    const path = currentSubdirs.find(s => s.name === cb.nextSibling.textContent)?.path;
+                    if (path) {
+                        if (selectAll) {
+                            selectedSubdirs.add(path);
+                        } else {
+                            selectedSubdirs.delete(path);
+                        }
+                    }
+                }
+            });
+            scheduleUpdateSessionDetails();
         }
         
         function updateSessionControls() {
@@ -576,9 +604,10 @@
             const result = await ipcRenderer.invoke('start-viewer', {
                 directory,
                 duration,
-                unit,
+                unit: 'seconds',
                 session: sessionSettings,
-                includeSubdirs
+                includeSubdirs,
+                fullscreen
             });
             
             if (!result.success) {
